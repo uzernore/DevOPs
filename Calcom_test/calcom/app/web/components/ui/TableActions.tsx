@@ -1,0 +1,103 @@
+import React, { FC } from "react";
+
+import Dropdown, { DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@calcom/ui/Dropdown";
+import { Icon } from "@calcom/ui/Icon";
+import Button from "@calcom/ui/v2/core/Button";
+
+import { SVGComponent } from "@lib/types/SVGComponent";
+
+export type ActionType = {
+  id: string;
+  icon?: SVGComponent;
+  iconClassName?: string;
+  label: string;
+  disabled?: boolean;
+  color?: "primary" | "secondary";
+} & (
+  | { href: string; onClick?: never; actions?: never }
+  | { href?: never; onClick: (e: React.MouseEvent<HTMLElement, MouseEvent>) => void; actions?: never }
+  | { actions?: ActionType[]; href?: never; onClick?: never }
+);
+
+interface Props {
+  actions: ActionType[];
+}
+
+const defaultAction = (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
+  e.stopPropagation();
+};
+
+const DropdownActions = ({
+  actions,
+  actionTrigger,
+}: {
+  actions: ActionType[];
+  actionTrigger?: React.ReactNode;
+}) => {
+  return (
+    <Dropdown>
+      {!actionTrigger ? (
+        <DropdownMenuTrigger asChild>
+          <Button type="button" color="secondary" size="icon" StartIcon={Icon.FiMoreHorizontal} />
+        </DropdownMenuTrigger>
+      ) : (
+        <DropdownMenuTrigger asChild>{actionTrigger}</DropdownMenuTrigger>
+      )}
+      <DropdownMenuContent portalled>
+        {actions.map((action) => (
+          <DropdownMenuItem key={action.id} className="focus-visible:outline-none">
+            <Button
+              type="button"
+              color="minimal"
+              className="w-full rounded-none font-normal"
+              href={action.href}
+              StartIcon={action.icon}
+              onClick={action.onClick || defaultAction}
+              data-testid={action.id}>
+              {action.label}
+            </Button>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </Dropdown>
+  );
+};
+
+const TableActions: FC<Props> = ({ actions }) => {
+  const mobileActions = actions.flatMap((action) => {
+    if (action.actions) {
+      return action.actions;
+    }
+    return action;
+  });
+  return (
+    <>
+      <div className="hidden space-x-2 rtl:space-x-reverse lg:flex">
+        {actions.map((action) => {
+          const button = (
+            <Button
+              key={action.id}
+              data-testid={action.id}
+              href={action.href}
+              onClick={action.onClick || defaultAction}
+              StartIcon={action.icon}
+              {...(action?.actions ? { EndIcon: Icon.FiChevronDown } : null)}
+              disabled={action.disabled}
+              color={action.color || "secondary"}>
+              {action.label}
+            </Button>
+          );
+          if (!action.actions) {
+            return button;
+          }
+          return <DropdownActions key={action.id} actions={action.actions} actionTrigger={button} />;
+        })}
+      </div>
+      <div className="inline-block text-left lg:hidden">
+        <DropdownActions actions={mobileActions} />
+      </div>
+    </>
+  );
+};
+
+export default TableActions;
